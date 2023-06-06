@@ -1,4 +1,5 @@
 param(
+  [string]$relativePath = "C:/repositories/ff-replay",
   [string]$outputDirectory = "C:/drive/pictures/ff-screenshot",
   [string]$saveToDirectory = "y",
   [string]$copyToClipboard = "y",
@@ -22,9 +23,6 @@ function quit(){
 function setRelativePath {
   if($PSScriptRoot){
     $relativePath = $PSScriptRoot
-  }
-  else{
-    $relativePath = "C:\Drive\Programming\Production\Powershell\FFmpeg\FFSuite\FFScreenshot"
   }
 
   return $relativePath
