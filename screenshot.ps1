@@ -1,8 +1,11 @@
 param(
-    [string]$captureDevice = "Game Capture 4K60 Pro MK.2",
-    [string]$resolution, #= "3840x2160",
-    [string]$crop, #= "718x723x0x0",
-    [string]$outputFileName = [string](Get-Date -Format "yyyy-MM-dd HH-mm-ss")
+  [string]$outputDirectory = "C:/drive/pictures/ff-screenshot",
+  [string]$saveToDirectory = "true",
+  [string]$copyToClipboard = "true",
+  [string]$captureDevice = "Game Capture 4K60 Pro MK.2",
+  [string]$resolution, #= "3840x2160",
+  [string]$crop, #= "718x723x0x0",
+  [string]$outputFilename = [string](Get-Date -Format "yyyy-MM-dd HH-mm-ss")
 )
 
 Add-Type -AssemblyName System.Drawing
@@ -15,30 +18,52 @@ function quit(){
   exit
 }
 
-function SetRelativePath {
-    if($PSScriptRoot){
-        $relativePath = $PSScriptRoot
-    }
-    else{
-        $relativePath = "C:\Drive\Programming\Production\Powershell\FFmpeg\FFSuite\FFScreenshot"
-    }
+function setRelativePath {
+  if($PSScriptRoot){
+    $relativePath = $PSScriptRoot
+  }
+  else{
+    $relativePath = "C:\Drive\Programming\Production\Powershell\FFmpeg\FFSuite\FFScreenshot"
+  }
 
-    return $relativePath
+  return $relativePath
 }
 
-function PrintConfig ($config) {
-    $printTable = $config | Format-Table -Wrap -AutoSize | Out-String -Stream | Where-Object{$_}
+function printConfig ($config) {
+  if($saveToDirectory -eq "true"){
+    $saveToDirectory = $true
+  } else {
+    $saveToDirectory = $false
+  }
 
-    Write-Host "Current configuration:"
+  if($copyToClipboard -eq "true"){
+    $copyToClipboard = $true
+  } else {
+    $copyToClipboard = $false
+  }
 
-    foreach($line in $printTable){
-        Write-Host $line
-    }
+  $printObject = @{
+    "output directory" = $outputDirectory
+    "save to directory" = $saveToDirectory
+    "copy to clipboard" = $copyToClipboard
+    "capture device" = $captureDevice
+    "resolution" = $resolution -eq "" ? "default" : $resolution
+    "crop" = $crop -eq "" ? "none" : $crop
+    "output filename" = $outputFilename
+  }
 
-    Write-Host ""
+  $printTable = $printObject | Format-Table -Wrap -AutoSize | Out-String -Stream | Where-Object{$_}
+
+  Write-Host "your configuration:" -ForegroundColor Cyan
+
+  foreach($line in $printTable){
+    Write-Host $line -ForegroundColor Magenta
+  }
+
+  Write-Host ""
 }
 
-function GenerateDirectory ($defaultDirectory) {
+function generateDirectory ($defaultDirectory) {
     Write-Host "Verifying directory exists..."
 
     if(!(Test-Path -Path $defaultDirectory)){
@@ -62,7 +87,7 @@ function GenerateDirectory ($defaultDirectory) {
     Write-Host ""
 }
 
-Function GenerateArgumentList ($captureDevice, $resolution, $crop, $defaultDirectory, $outputFileName) {
+Function generateArgumentList ($captureDevice, $resolution, $crop, $defaultDirectory, $outputFilename) {
     Write-Host "Generating argument list..."
 
     $argumentList = @(
@@ -99,7 +124,7 @@ Function GenerateArgumentList ($captureDevice, $resolution, $crop, $defaultDirec
         "-pix_fmt", "yuvj444p",
         "-vframes", "1",
         "-q:v", "2",
-        "`"$defaultDirectory\$outputFileName.jpeg`""
+        "`"$defaultDirectory\$outputFilename.jpeg`""
 
     return $argumentList
 }
@@ -123,7 +148,7 @@ function printArgumentList($argumentList){
   Write-Host ""
 }
 
-function RunFFmpegCommand ($argumentList, $outputFilePath) {
+function runFFmpegCommand ($argumentList, $outputFilePath) {
     Write-Host "Generating screenshot..."
     Start-Process "ffmpeg" -ArgumentList $argumentList -Wait -NoNewWindow
 
@@ -139,7 +164,7 @@ function RunFFmpegCommand ($argumentList, $outputFilePath) {
     Write-Host ""
 }
 
-function CopyToClipboard ($copyToClipboard, $outputFilePath) {
+function copyToClipboard ($copyToClipboard, $outputFilePath) {
     if($copyToClipboard){
         Write-Host "Copying screenshot to clipboard..."
 
@@ -151,7 +176,7 @@ function CopyToClipboard ($copyToClipboard, $outputFilePath) {
     }
 }
 
-function DeleteScreenshot ($saveToDirectory, $outputFilePath) {
+function deleteScreenshot ($saveToDirectory, $outputFilePath) {
     if(!$saveToDirectory){
         Write-Host "Save to directory is disabled, screenshot will now be deleted..."
 
@@ -163,18 +188,17 @@ function DeleteScreenshot ($saveToDirectory, $outputFilePath) {
 
 try{
   Write-Host "Program is starting..."
-  $argumentList = GenerateArgumentList $captureDevice $resolution $crop "C:\Users\$($env:UserName)\AppData\Local\Temp" $outputFileName
+  $argumentList = generateArgumentList $captureDevice $resolution $crop "C:\Users\$($env:UserName)\AppData\Local\Temp" $outputFilename
   $outputFilePath = $argumentList[$argumentList.Length - 1].Replace("`"", "")
-  RunFFmpegCommand $argumentList $outputFilePath
+  runFFmpegCommand $argumentList $outputFilePath
   printArgumentList $argumentList
-  $relativePath = SetRelativePath
-  $config = Get-Content -Path "$relativePath\config.json" | ConvertFrom-Json
-  PrintConfig $config
-  GenerateDirectory $config.DefaultDirectory
+  $relativePath = setRelativePath
+  printConfig
+  generateDirectory $config.DefaultDirectory
   Move-Item -Path $outputFilePath -Destination $config.DefaultDirectory
   $outputFilePath = "$($config.DefaultDirectory)$($outputFilePath.Substring($outputFilePath.LastIndexOf("\")))"
-  CopyToClipboard $config.CopyToClipboard $outputFilePath
-  DeleteScreenshot $config.SaveToDirectory $outputFilePath
+  copyToClipboard $config.copyToClipboard $outputFilePath
+  deleteScreenshot $config.SaveToDirectory $outputFilePath
   Write-Host "Process completed, program will automatically close in 10 seconds..."
   Start-Sleep 10
   exit
