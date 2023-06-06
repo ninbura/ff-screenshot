@@ -79,8 +79,8 @@ function generateArgumentList ($captureDevice, $resolution, $crop, $outputDirect
 
   $argumentList = @(
     "-y",
-    "-loglevel", "error"
-    "-stats"
+    "-loglevel", "error",
+    "-stats",
     "-f", "dshow",
     "-rtbufsize", "2147.48M",
     "-i", "video=`"$captureDevice`"",
