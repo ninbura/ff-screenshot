@@ -1,5 +1,5 @@
 param(
-  [string]$relativePath = "C:/repositories/ff-replay",
+  [string]$relativePath = "C:/repositories/ff-screenshot",
   [string]$outputDirectory = "C:/drive/pictures/ff-screenshot",
   [string]$saveToDirectory = "y",
   [string]$copyToClipboard = "y",
