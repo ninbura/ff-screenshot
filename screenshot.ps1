@@ -1,11 +1,12 @@
 param(
   [string]$outputDirectory = "C:/drive/pictures/ff-screenshot",
-  [string]$saveToDirectory = "true",
-  [string]$copyToClipboard = "true",
+  [string]$saveToDirectory = "y",
+  [string]$copyToClipboard = "y",
   [string]$captureDevice = "Game Capture 4K60 Pro MK.2",
   [string]$resolution, #= "3840x2160",
   [string]$crop, #= "718x723x0x0",
-  [string]$outputFilename = [string](Get-Date -Format "yyyy-MM-dd HH-mm-ss")
+  [string]$outputFilename = [string](Get-Date -Format "yyyy-MM-dd HH-mm-ss"),
+  [string]$bypassQuit = "n"
 )
 
 Add-Type -AssemblyName System.Drawing
@@ -29,19 +30,7 @@ function setRelativePath {
   return $relativePath
 }
 
-function printConfig ($config) {
-  if($saveToDirectory -eq "true"){
-    $saveToDirectory = $true
-  } else {
-    $saveToDirectory = $false
-  }
-
-  if($copyToClipboard -eq "true"){
-    $copyToClipboard = $true
-  } else {
-    $copyToClipboard = $false
-  }
-
+function printConfig () {
   $printObject = @{
     "output directory" = $outputDirectory
     "save to directory" = $saveToDirectory
@@ -63,31 +52,31 @@ function printConfig ($config) {
   Write-Host ""
 }
 
-function generateDirectory ($defaultDirectory) {
+function generateDirectory ($outputDirectory) {
   Write-Host "Verifying directory exists..."
 
-  if(!(Test-Path -Path $defaultDirectory)){
+  if(!(Test-Path -Path $outputDirectory)){
     Write-Host "Directory does not exist, creating directory..."
 
-    New-Item -Path $defaultDirectory -ItemType "directory" -Force
+    New-Item -Path $outputDirectory -ItemType "directory" -Force
 
-    if(Test-Path -Path $defaultDirectory){
-      Write-Host "`"$defaultDirectory`" has been created."
+    if(Test-Path -Path $outputDirectory){
+      Write-Host "`"$outputDirectory`" has been created."
     }
     else{
-      Write-Host "`"$defaultDirectory`" could not be created, see log for details."
+      Write-Host "`"$outputDirectory`" could not be created, see log for details."
       
       exit
     }
   }
   else{
-    Write-Host "`"$defaultDirectory`" already exists, program will continue."
+    Write-Host "`"$outputDirectory`" already exists, program will continue."
   }
 
   Write-Host ""
 }
 
-function generateArgumentList ($captureDevice, $resolution, $crop, $defaultDirectory, $outputFilename) {
+function generateArgumentList ($captureDevice, $resolution, $crop, $outputDirectory, $outputFilename) {
   Write-Host "Generating argument list..."
 
   $argumentList = @(
@@ -124,7 +113,7 @@ function generateArgumentList ($captureDevice, $resolution, $crop, $defaultDirec
     "-pix_fmt", "yuvj444p",
     "-vframes", "1",
     "-q:v", "2",
-    "`"$defaultDirectory\$outputFilename.jpeg`""
+    "`"$outputDirectory\$outputFilename.jpeg`""
 
   return $argumentList
 }
@@ -165,7 +154,7 @@ function runFFmpegCommand ($argumentList, $outputFilePath) {
 }
 
 function copyToClipboard ($copyToClipboard, $outputFilePath) {
-  if($copyToClipboard){
+  if($copyToClipboard -eq "y"){
     Write-Host "Copying screenshot to clipboard..."
 
     $screenshot = [System.Drawing.Image]::FromFile((Get-Item -Path $outputFilePath))
@@ -177,12 +166,22 @@ function copyToClipboard ($copyToClipboard, $outputFilePath) {
 }
 
 function deleteScreenshot ($saveToDirectory, $outputFilePath) {
-  if(!$saveToDirectory){
+  if($saveToDirectory -eq "n"){
     Write-Host "Save to directory is disabled, screenshot will now be deleted..."
 
     Remove-Item -Path "$outputFilePath" -Force
 
     Write-Host "$outputFilePath has been deleted.`n"
+  }
+}
+
+function quitOrBypass(){
+  if($bypassQuit.ToLower() -eq "n"){
+    quit
+  } else {
+    Write-Host "Process completed, program will automatically close in 10 seconds..."
+    Start-Sleep 10
+    exit
   }
 }
 
@@ -194,14 +193,12 @@ try {
   printArgumentList $argumentList
   $relativePath = setRelativePath
   printConfig
-  generateDirectory $config.DefaultDirectory
-  Move-Item -Path $outputFilePath -Destination $config.DefaultDirectory
-  $outputFilePath = "$($config.DefaultDirectory)$($outputFilePath.Substring($outputFilePath.LastIndexOf("\")))"
-  copyToClipboard $config.copyToClipboard $outputFilePath
-  deleteScreenshot $config.SaveToDirectory $outputFilePath
-  Write-Host "Process completed, program will automatically close in 10 seconds..."
-  Start-Sleep 10
-  exit
+  generateDirectory $outputDirectory
+  Move-Item -Path $outputFilePath -Destination $outputDirectory
+  $outputFilePath = "$($outputDirectory)$($outputFilePath.Substring($outputFilePath.LastIndexOf("\")))"
+  copyToClipboard $copyToClipboard $outputFilePath
+  deleteScreenshot $saveToDirectory $outputFilePath
+  quitOrBypass
 } catch {
   Write-Host "An error occurred:" -ForegroundColor red
   Write-Host $_ -ForegroundColor red
