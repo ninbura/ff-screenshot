@@ -4,6 +4,7 @@ param(
   [string]$saveToDirectory = "y",
   [string]$copyToClipboard = "y",
   [string]$captureDevice = "Game Capture 4K60 Pro MK.2",
+  [string]$colorFormat,
   [string]$resolution, #= "3840x2160",
   [string]$crop, #= "718x723x0x0",
   [string]$outputFilename = [string](Get-Date -Format "yyyy-MM-dd HH-mm-ss"),
@@ -82,10 +83,14 @@ function generateArgumentList ($captureDevice, $resolution, $crop, $outputDirect
     "-loglevel", "error",
     "-stats",
     "-f", "dshow",
-    "-rtbufsize", "2147.48M",
-    "-i", "video=`"$captureDevice`"",
-    "-map", "0"
+    "-rtbufsize", "2147.48M"
   )
+
+  if($colorFormat){
+    $argumentList += "-pixel_format", $colorFormat
+  }
+
+  $argumentList += "-i", "video=`"$captureDevice`"", "-map", "0"
 
   if($crop){
     $resolutionArray = $resolution.Split("x")
