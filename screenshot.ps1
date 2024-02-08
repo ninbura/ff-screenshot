@@ -4,7 +4,7 @@ param(
   [string]$saveToDirectory = "y",
   [string]$copyToClipboard = "y",
   [string]$captureDevice = "Game Capture 4K60 Pro MK.2",
-  [string]$inputFormat,
+  [string]$vcodec,
   [string]$resolution, #= "3840x2160",
   [string]$crop, #= "718x723x0x0",
   [string]$outputFilename = [string](Get-Date -Format "yyyy-MM-dd HH-mm-ss"),
@@ -86,8 +86,8 @@ function generateArgumentList ($captureDevice, $resolution, $crop, $outputDirect
     "-rtbufsize", "2147.48M"
   )
 
-  if($colorFormat){
-    $argumentList += "-input_format", $colorFormat
+  if($vcodec){
+    $argumentList += "-vcodec", $vcodec
   }
 
   $argumentList += "-i", "video=`"$captureDevice`"", "-map", "0"
