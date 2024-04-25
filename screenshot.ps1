@@ -86,6 +86,10 @@ function generateArgumentList ($captureDevice, $resolution, $crop, $outputDirect
     "-rtbufsize", "2147.48M"
   )
 
+  if($resolution -ne "") {
+    $argumentList += "-video_size", $resolution
+  }
+
   if($vcodec){
     $argumentList += "-vcodec", $vcodec
   }
