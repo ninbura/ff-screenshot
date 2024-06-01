@@ -1,9 +1,9 @@
 param(
-  [string]$relativePath = "C:/repositories/ff-screenshot",
-  [string]$outputDirectory = "C:/drive/pictures/ff-screenshot",
+  [string]$relativePath = "~/repos/ff-screenshot",
+  [string]$outputDirectory = "~/Pictures",
   [string]$saveToDirectory = "y",
   [string]$copyToClipboard = "y",
-  [string]$captureDevice = "Game Capture 4K60 Pro MK.2",
+  [string]$captureDevice = "AVerMedia HD Capture GC573 1",
   [string]$vcodec,
   [string]$resolution, #= "3840x2160",
   [string]$crop, #= "718x723x0x0",
@@ -118,9 +118,10 @@ function generateArgumentList ($captureDevice, $resolution, $crop, $outputDirect
 
   $argumentList += 
     "-pix_fmt", "yuvj444p",
-    "-vframes", "1",
+    "-update", "1",
+    "-frames:v", "1",
     "-q:v", "2",
-    "`"$outputDirectory\$outputFilename.jpeg`""
+    "`"$outputDirectory/$outputFilename.jpeg`""
 
   return $argumentList
 }
@@ -194,7 +195,7 @@ function quitOrBypass(){
 
 try {
   Write-Host "Program is starting..."
-  $argumentList = generateArgumentList $captureDevice $resolution $crop "C:\Users\$($env:UserName)\AppData\Local\Temp" $outputFilename
+  $argumentList = generateArgumentList $captureDevice $resolution $crop "/Users/$([Environment]::UserName)/AppData/Local/Temp" $outputFilename
   $outputFilePath = $argumentList[$argumentList.Length - 1].Replace("`"", "")
   runFFmpegCommand $argumentList $outputFilePath
   printArgumentList $argumentList
@@ -202,7 +203,7 @@ try {
   printConfig
   generateDirectory $outputDirectory
   Move-Item -Path $outputFilePath -Destination $outputDirectory
-  $outputFilePath = "$($outputDirectory)$($outputFilePath.Substring($outputFilePath.LastIndexOf("\")))"
+  $outputFilePath = "$($outputDirectory)$($outputFilePath.Substring($outputFilePath.LastIndexOf("/")))"
   copyToClipboard $copyToClipboard $outputFilePath
   deleteScreenshot $saveToDirectory $outputFilePath
   quitOrBypass
